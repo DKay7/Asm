@@ -11,6 +11,6 @@ start:
     int 21h
 
 .data
-msg     db "murr poltorashka$"
 
+msg     db "murr poltorashka$"
 end start
