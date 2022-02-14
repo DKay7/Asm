@@ -1,10 +1,13 @@
 .model tiny
-;----------------------------------------
+
+;------------------------------------------------------------------------
 ; constants
 
+cmd_data_addr   = 82h
+byte_array_len  = 3h
+
 videoseg	    = 0b800h
-border_color    = 04h
-bg_color        = 04h  
+
 
 box_len         = 44h
 box_height      = 0fh
@@ -12,59 +15,68 @@ box_height      = 0fh
 window_len      = 50h
 window_height   = 14h
 
-
+bg_color        = 04h  
 start_x         = 5
 start_y         = 5
-;----------------------------------------
+;------------------------------------------------------------------------
+; macro block
+
+NewLineForBox macro
+    add di, 2 * (window_len - box_len)
+endm
+
+;------------------------------------------------------------------------
+; main block
 
 .code
 locals @@
 org 100h
 
 start:
-    mov ah, bg_color      
-    mov bx, videoseg
-    mov es, bx
+    mov ah, bg_color                                ; loads color
+    mov bx, videoseg                                ; loads videoseg addr
+    mov es, bx                                      ; loads videoseg addr
 
-    mov cx, box_len
-    mov si, offset horyz_up_symbs
-    mov di, (start_x + start_y * window_len) * 2
-    call DrawLine
+    mov cx, box_len                                 ; loads box len
+    mov si, cmd_data_addr                           ; loads cmd data addres 
+    mov di, (start_x + start_y * window_len) * 2    ; sets correct position
+    call DrawLine                                   ; calls function to draw header line
 
-    xor bx, bx
+    xor bx, bx                                      ; sets bx to 0
     
-    zaloop:
-        add di, 2 * (window_len - box_len)
-
-        inc bx
-        mov cx, box_len
-        mov si, offset vertc_symbs
-        call DrawLine
+    zaloop:                                         ; (zaloop)
+        NewLineForBox                               ; new line 
+        inc bx                                      ; increment cycle counter
+        mov cx, box_len                             ; loads box len to compare later
+        mov si, cmd_data_addr + byte_array_len      ; loads pointer to next array (middle-lines array)
+        call DrawLine                               ; calls function to draw middle-lines
         
-        cmp bx, box_height
-        jbe zaloop
+        cmp bx, box_height                          ; compare cycle counter and length of box
+        jbe zaloop                                  ; (zaloop)
 
-    add di, 2 * (window_len - box_len)
-    mov cx, box_len
-    mov si, offset horyz_down_symbs
-    call DrawLine
+    NewLineForBox                                   ; another new line 
 
+    mov cx, box_len                                 ; loads box len
+    mov si, cmd_data_addr + 2 * byte_array_len      ; loads pointer to array with footer line
+    call DrawLine                                   ; calls function to draw footer line 
 
     mov ax, 4c00h
     int 21h
 
 
-;----------------------------------------
-; Draws a line in a frame
+;------------------------------------------------------------------------
+; DrawLine
+;
+; Draws one a line in a frame by given characters
+;
 ; Entry:    AH -- color of a line
 ;           CX -- len of a string
 ;           SI -- addr of 3-byte array containing line elements
 ;           DI -- addres of a start of a line
 ; Note:  ES -- videoseg addr (0b800h)
 ; Exit:  None
-; Destr: AX, CX
-;----------------------------------------
-
+; Destr: AX, CX, DI, SI
+;------------------------------------------------------------------------
 DrawLine    proc
     mov al, [si]        ; first symbol to a-low         ; one command loadsb (byte)
     inc si              ; increase si (si++)            ; one command loadsb (byte)         -- increases si on 1
@@ -98,10 +110,5 @@ DrawLine    proc
         ret
 DrawLine endp
 
-;----------------------------------------
-
-.data
-horyz_up_symbs      db "…Õª"
-horyz_down_symbs    db "»Õº"
-vertc_symbs         db "∫ ∫"
+;------------------------------------------------------------------------
 end start
