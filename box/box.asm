@@ -78,37 +78,35 @@ start:
 ; Destr: AX, CX, DI, SI
 ;------------------------------------------------------------------------
 DrawLine    proc
-    mov al, [si]        ; first symbol to a-low         ; one command loadsb (byte)
-    inc si              ; increase si (si++)            ; one command loadsb (byte)         -- increases si on 1
-                                                        ; also loadsw        (word)         -- increases si on 2
-                                                        ; also loadsd        (double word)  -- increases si on 4
-                                                        ; cld                               -- clear destination flag
+    mov al, [si]            ; first symbol to a-low         ; one command loadsb (byte)
+    inc si                  ;                               ; one command loadsb (byte)         -- increases si on 1
                                                         
-    mov es:[di], ax     ; add ah (color) and al (symb) to videoram
-                                                        ; stosw (store string of words)
+    mov es:[di], ax         ; add ah (color) and al         ; stosw (store string of words)
+                            ; (symb) to videoram
 
-    add di, 2           ; moves line ptr        
+    add di, 2               ; moves line ptr        
                                     
-    mov al, [si]        ; as above                      ; loadsb
-    inc si                                              ; loadsb
+    mov al, [si]            ; as above                      ; loadsb
+    inc si                                                  ; loadsb
 
     sub cx, 2                               
                                             
-    jbe @@stopLine      ; if cx - 2 <= 0 then we shouldnt draw line
+    jbe @@stopLine          ; if cx - 2 <= 0 then we shouldnt draw line
 
     @@nextSym:
-        mov es:[di], ax                                 ; rep stosw = subs cx 1 and repeats "stosw"7 while cx > 0
+        mov es:[di], ax                                     ; rep stosw = subs cx 1 and repeats "stosw"7 while cx > 0
         add di, 2           ; moves line ptr for 2 bytes
         loop @@nextSym      ; special command which subs 1 from cx and jumps to nextSym
 
-    mov al, [si]            ; as above                  ; loadsb
-    mov es:[di], ax                                     ; stosw
+    mov al, [si]            ; as above                      ; loadsb
+    mov es:[di], ax                                         ; stosw
 
-    add di, 2
+    add di, 2               ; idk
 
-    @@stopLine:
+    @@stopLine:             
         ret
 DrawLine endp
 
 ;------------------------------------------------------------------------
 end start
+;hate 111, let's make it 112
