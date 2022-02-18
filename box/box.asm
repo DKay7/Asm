@@ -15,6 +15,7 @@ box_height      = 0fh
 window_len      = 50h
 window_height   = 14h
 
+fg_color        = 0eh
 bg_color        = 04h  
 start_x         = 5
 start_y         = 5
@@ -78,31 +79,19 @@ start:
 ; Destr: AX, CX, DI, SI
 ;------------------------------------------------------------------------
 DrawLine    proc
-    mov al, [si]            ; first symbol to a-low         ; one command loadsb (byte)
-    inc si                  ;                               ; one command loadsb (byte)         -- increases si on 1
-                                                        
-    mov es:[di], ax         ; add ah (color) and al         ; stosw (store string of words)
-                            ; (symb) to videoram
+    lodsb                   ; puts first symbol to a-low and increses si by 1
 
-    add di, 2               ; moves line ptr        
-                                    
-    mov al, [si]            ; as above                      ; loadsb
-    inc si                                                  ; loadsb
-
+    stosw                   ; puts ax (ah -- (color), al -- (symb)) to videoram and increses di by 2      
+    lodsb                   ; puts second symbol to a-low and increses si by 1
+    
     sub cx, 2                               
-                                            
     jbe @@stopLine          ; if cx - 2 <= 0 then we shouldnt draw line
 
-    @@nextSym:
-        mov es:[di], ax                                     ; rep stosw = subs cx 1 and repeats "stosw"7 while cx > 0
-        add di, 2           ; moves line ptr for 2 bytes
-        loop @@nextSym      ; special command which subs 1 from cx and jumps to nextSym
+    repnz stosw             ; repeats while cx not zero
+                            ; puts ax (ah -- (color), al -- (symb)) to videoram and increses di by 2 
 
-    mov al, [si]            ; as above                      ; loadsb
-    mov es:[di], ax                                         ; stosw
-
-    add di, 2               ; idk
-
+    lodsb                   ; puts third symbol to a-low and increses si by 1
+    stosw                   ; puts ax (ah -- (color), al -- (symb)) to videoram and increses di by 2 
     @@stopLine:             
         ret
 DrawLine endp
