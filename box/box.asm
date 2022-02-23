@@ -13,8 +13,8 @@ box_height      = 0fh
 window_len      = 50h
 window_height   = 14h
 
-fg_color        = 0eh
-bg_color        = 04h  
+fg_color        = 1Bh
+bg_color        = 0Bh  
 start_x         = 5
 start_y         = 5
 
