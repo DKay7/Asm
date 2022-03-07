@@ -88,7 +88,6 @@ start:
     mov cx, box_len                                 ; loads box len
     mov si, offset bottom_symbols                   ; loads pointer to array with footer line
 
-    ;add si, byte_array_len
     call DrawLine                                   ; calls function to draw footer line 
 
     ; draws text
@@ -126,7 +125,7 @@ DrawLine    proc
     lodsb                   ; puts second symbol to a-low and increses si by 1
     
     sub cx, 2                               
-    repnz stosw             ; repeats while cx not zero
+    rep stosw               ; repeats while cx not zero
                             ; puts ax (ah -- (color), al -- (symb)) to videoram and increses di by 2 
 
     lodsb                   ; puts third symbol to a-low and increses si by 1
@@ -206,7 +205,7 @@ strlen    proc
     lodsb 
     cmp al, 0
     je @@return     ; if string contains only 0-terminator char
-
+                    ; repne scasb
     @@zaloop:
         inc cx
         lodsb
@@ -319,9 +318,9 @@ WriteText   endp
 ;------------------------------------------------------------------------
 ; data block
 .data
-header_symbols  db  "’Õª"
-middle_symbols  db  "≥∞∫"
-bottom_symbols  db  "‘Õº"
+header_symbols  db  "…Õª"
+middle_symbols  db  "∫ ∫"
+bottom_symbols  db  "»Õº"
 text_data       db  "Poltorashka! :3", 0
 
 end start
