@@ -23,8 +23,10 @@ byte_array_len      = 3d
 fg_color            = 1Bh
 bg_color            = 0Bh  
 
-window_len          = 50h
-window_height       = 14h
+window_len          = 80d
+window_height       = 25d
+buffer_seg          = 0B925h
+buffer_size         = window_len * window_height
 
 box_len             = 18h
 box_height          = 10h
@@ -89,6 +91,23 @@ start:
 ; FUNCTIONS BLOCK
 ;-------------------------------------------------------------------------
 
+; WriteBuffer
+; 
+; Expects:
+;          ES:DI addres of start buffer to copy to
+;          DS:SI addres of start of buffer
+;          CX    size of buffer
+; Destroys: AX
+;-------------------------------------------------------------------------
+WriteBuffer proc
+    @@copy_cycle:
+        lodsw
+        stosw
+    loop @@copy_cycle
+
+    ret
+WriteBuffer endp
+
 ;-------------------------------------------------------------------------
 ; ReplaceInterrupt
 ; replace old interrupt with new one, but saves old one too
@@ -133,21 +152,41 @@ NewInt09_Evil proc
     push ax bx cx dx si di es ds 
     in al, 60h
     cmp al, SwitchButton
-    je @@Activate
+    je @@Switch
 
     jmp @@Return
     
-    @@Activate:
+    @@Switch:
         not cs:FrameSwitcher
-        ; mov al, cs:FrameSwitcher
-        ; add al, 'A'
-        ; mov ah, 4eh
-        ; mov bx, videoseg                                ; loads videoseg addr
-        ; mov es, bx                                      ; loads videoseg addr
-        ; mov di, 0h
-        ; mov es:[di], ax
 
-        ; TODO save screen to buffer
+        cmp cs:FrameSwitcher, 00h
+        je @@DrawBufferBack
+        
+        mov ax, videoseg
+        mov ds, ax
+        xor si, si
+
+        mov ax, buffer_seg
+        mov es, ax
+        xor di, di
+
+        mov cx, buffer_size
+        call WriteBuffer
+        jmp @@Return
+
+        @@DrawBufferBack:
+            mov ax, videoseg
+            mov es, ax
+            xor di, di
+
+            mov ax, buffer_seg
+            mov ds, ax
+            xor si, si
+
+            mov cx, buffer_size
+            call WriteBuffer
+            jmp @@Return
+
 
     @@Return:
         ; K-BRD Acepted 
@@ -178,12 +217,9 @@ NewInt08_Evil proc
     push ax bx cx dx si di es ds 
     
     cmp cs:FrameSwitcher, 0h
-    je  @@EraseFrame
+    je  @@Return
 
     call DrawBox
-
-    @@EraseFrame:
-    ; TODO erase frame
 
     @@Return: 
         pop ds es di si dx cx bx ax
@@ -191,7 +227,6 @@ NewInt08_Evil proc
                     db 0EAh             ; long jump to...
         OldInt08    dd 0                ; old 08 int. (zeros fill be filled later)
 endp NewInt08_Evil
-
 ;-------------------------------------------------------------------------
 ; DrawBox
 ; drows a frame with registers values in it
@@ -232,7 +267,6 @@ DrawBox proc
 
     call DrawLine                                   ; calls function to draw footer line 
 
-    ; TODO draw registers - doesnt work!
     mov cx, num_of_regs
     mov di, (start_x + text_x_shift + (start_y + text_y_shift) * window_len) * 2
     mov bx, offset Names_reg
