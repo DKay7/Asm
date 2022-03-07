@@ -4,8 +4,14 @@ org 100h
 
 start:
     
-    mov si, offset msg1
-    call atoi_10
+    mov cx, 1345h
+    mov si, 1247h
+    lea di, msg2
+    push di
+    mov ax, 'l'
+    push ax
+    mov ax, 1234h
+    ;call atoi_10
     ;call atoi_8
     ;call atoi_2
     ;call itoa_8

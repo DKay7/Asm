@@ -1,5 +1,3 @@
-; atoi (10)
-
 locals @@
 .186
 
@@ -12,13 +10,16 @@ locals @@
 ;
 ; Exit:     CX -- length of the string without 0-symbol
 ;
-; Destr:    AL, CX, SI
+; Destr:    CX
 ;------------------------------------------------------------------------
 StrLen    proc
+
+    push ax si bp
+    mov bp, sp
+    
     xor cx, cx
 
-
-    lodsb 
+    lodsb
     cmp al, 0
     je @@return     ; if string contains only 0-terminator char
 
@@ -29,6 +30,8 @@ StrLen    proc
     jne @@zaloop
 
     @@return:
+
+        pop bp si ax
         ret
 StrLen    endp
 
@@ -37,17 +40,23 @@ StrLen    endp
 ;------------------------------------------------------------------------
 ; StrChr
 ;
-; Findes the position of given 
+; Findes the position of given char in given string
 ;
 ; Entry:    SI -- addr of 0-terminated string
 ;           BL -- char to find
 ;
 ; Exit:     CX -- Position of given char in given string or -1
 ;
-; Destr:    AL, CX, SI
+; Destr:    CX
 ;------------------------------------------------------------------------
 
 StrChr    proc
+    push ax bx si bp
+    mov bp, sp
+
+    mov bl, [bp + 6]
+    mov si, [bp + 2]
+
     xor cx, cx
 
     @@zaloop:
@@ -66,6 +75,7 @@ StrChr    proc
 
     ; if char is found
     @@return:
+        pop bp si ax
         ret
 
 StrChr    endp
@@ -83,21 +93,30 @@ StrChr    endp
 ;
 ; Exit:     None     
 ;
-; Destr:    BX, CX, DI, SI
+; Destr:    None
 ;------------------------------------------------------------------------
 
 StrNCpy    proc
+    push bx cx di si bp
+    mov bp, sp
+
+    mov cx, [bp + 8]
+    mov di, [bp + 6]
+    mov si, [bp + 4]
 
     @@zaloop:
-        mov bl, [si]
-        mov ds:[di], bl
-        inc di
-        inc si
+        movsb                   ; [di] -> [si], inc si, inc di 
+        mov bl, ds:[di]
+        cmp bl, 0               ; checks 0-terminating symbol
+        je @@string_was_ended 
     loop @@zaloop
 
-    mov bl, 0
-    mov ds:[di], bl
-    ret
+    @@string_was_ended:
+        mov bl, 0
+        mov ds:[di], bl
+
+        pop bp si di cx bx
+        ret
 
 StrNCpy    endp
 
@@ -114,26 +133,39 @@ StrNCpy    endp
 ;
 ; Exit:     in ax: 0 if str1 == str2, less 0 if str1 < str2 or more 0 if str1 > str2     
 ;
-; Destr:    AX, BX, CX, DI, SI
+; Destr:    AX
 ;------------------------------------------------------------------------
 
 StrNCmp    proc
+    push bx cx di si bp
+    mov bp, sp
+
+    mov cx, [bp + 6]
+    mov di, [bp + 4]
+    mov si, [bp + 2]
 
     @@zaloop:
-        mov al, [si]
+        mov al, [si]         
         mov bl, [di]
+
+
         sub ax, bx
         inc si
         inc di
 
         cmp ax, 0
         jne @@not_equals_chars
+
+        cmp bx, 0
+        je @@strings_are_ended
     loop @@zaloop
     
     ; if loop is ended, but all chars are the same
-    mov ax, 0
-
+    @@strings_are_ended:
+        mov ax, 0
+    
     @@not_equals_chars:
+        pop bp si di cx bx
         ret 
 
 StrNCmp    endp
@@ -151,23 +183,14 @@ StrNCmp    endp
 ;
 ; Exit:     None
 ;
-; Destr:    AX, BX, CX, DI, SI
+; Destr:    None
 ;------------------------------------------------------------------------
 
 itoa_16      proc
+    push ax bx cx di si bp
+
     ; skip leading zeros
     mov cx, 4d
-    jmp @@check_leading_zero
-    
-    @@skip_leading_zeros:
-        shl bx, 4d
-        dec cx
-    @@check_leading_zero:
-        mov ax, bx
-        shr ax, 12 
-        cmp ax, 0
-    je @@skip_leading_zeros
-
 
     @@convert_num_to_str:
         mov si, offset str_for_16
@@ -182,6 +205,7 @@ itoa_16      proc
     xor ax, ax
     stosb
 
+    pop bp si di cx bx ax
     ret
 itoa_16    endp
 
@@ -195,10 +219,16 @@ itoa_16    endp
 ;
 ; Exit:     None     
 ;
-; Destr:    AX, BX, CX, DX, SI, DI
+; Destr:    None
 ;------------------------------------------------------------------------
 
 itoa_10    proc
+    push ax bx cx dx di si bp
+    mov bp, sp
+    
+    mov di, [bp + 4]
+    mov bx, [bp + 10]
+
     ; count len of the number
     mov ax, bx
     mov dl, 10d
@@ -233,6 +263,7 @@ itoa_10    proc
         cmp cx, 0
     ja @@translate_int_to_str
 
+    pop bp si di dx cx bx ax
     ret
 itoa_10    endp
 
@@ -246,9 +277,15 @@ itoa_10    endp
 ;
 ; Exit:     None
 ;
-; Destr:    AX, BX, CX, DI
+; Destr:    None
 ;------------------------------------------------------------------------
 itoa_8      proc
+    push ax bx cx di bp
+    mov bp, sp
+    
+    mov di, [bp + 2]
+    mov bx, [bp + 6]
+
     mov cx, 6       ; num of digits
 
     ; skip leading zeros
@@ -282,6 +319,7 @@ itoa_8      proc
     xor ax, ax
     stosb
 
+    pop bp di cx bx ax
     ret
 itoa_8    endp
 
@@ -295,10 +333,16 @@ itoa_8    endp
 ;
 ; Exit:     None
 ;
-; Destr:    AX, BX, CX, DI
+; Destr:    None
 ;------------------------------------------------------------------------
 
 itoa_2      proc
+    push ax bx cx di bp
+    mov bp, sp
+    
+    mov di, [bp + 2]
+    mov bx, [bp + 6]
+
     ; skip leading zeros
     mov cx, 16d
     jmp @@check_leading_zero
@@ -323,6 +367,7 @@ itoa_2      proc
     xor ax, ax
     stosb
 
+    pop bp di cx bx ax
     ret
 itoa_2    endp
 
@@ -336,9 +381,14 @@ itoa_2    endp
 ;
 ; Exit:     BX -- result of convertation
 ;
-; Destr:    AX, BX, CX, DX, SI
+; Destr:    BX
 ;------------------------------------------------------------------------
 atoi_10  proc
+    push ax cx si bp
+    mov bp, sp
+    
+    mov di, [bp + 2]
+
     xor bx, bx
     mov cx, 10d
     jmp @@start_cycle
@@ -357,6 +407,8 @@ atoi_10  proc
     jne @@convert_str_to_num
 
     mov bx, ax
+    pop bp si cx ax
+
     ret
 atoi_10  endp
 
@@ -369,14 +421,19 @@ atoi_10  endp
 ;
 ; Exit:     BX -- result of convertation
 ;
-; Destr:    AX, BX, SI
+; Destr:    BX
 ;------------------------------------------------------------------------
 atoi_8  proc
+    push ax si bp
+    mov bp, sp
+    
+    mov si, [bp + 2]
+
     xor bx, bx
     jmp @@start_cycle
     
     @@convert_str_to_num:
-        shl bx, 3           ; this is the only thing different from atoi_2, maybe macros (cringe)
+        shl bx, 3           ; this is the only thing different from atoi_2, maybe add macros (cringe)
         sub al, '0'
         add bl, al
     @@start_cycle:
@@ -384,6 +441,7 @@ atoi_8  proc
         cmp al, 0
     jne @@convert_str_to_num
 
+    pop bp si ax
     ret
 atoi_8  endp
 
@@ -396,9 +454,14 @@ atoi_8  endp
 ;
 ; Exit:     BX -- result of convertation
 ;
-; Destr:    AX, BX, SI
+; Destr:    BX
 ;------------------------------------------------------------------------
 atoi_2  proc
+    push ax si bp
+    mov bp, sp
+
+    mov si, [bp + 2]
+
     xor bx, bx
     jmp @@start_cycle
     
@@ -411,6 +474,7 @@ atoi_2  proc
         cmp al, 0
     jne @@convert_str_to_num
 
+    pop bp si ax
     ret
 atoi_2  endp
 
